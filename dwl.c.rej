@@ -1,0 +1,11 @@
+--- dwl.c
++++ dwl.c
+@@ -710,6 +721,8 @@ checkidleinhibitor(struct wlr_surface *exclude)
+ void
+ cleanup(void)
+ {
++	KeyboardGroup *kb_group;
++
+ 	cleanuplisteners();
+ #ifdef XWAYLAND
+ 	wlr_xwayland_destroy(xwayland);
