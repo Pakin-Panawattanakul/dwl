@@ -179,6 +179,8 @@ typedef struct {
 	struct wl_listener modifiers;
 	struct wl_listener key;
 	struct wl_listener destroy;
+
+	struct wl_list link;
 } KeyboardGroup;
 
 typedef struct {
@@ -269,6 +271,15 @@ typedef struct {
 	int y;
 } Vector;
 
+typedef struct {
+	const char *name;
+	const char *rules;
+	const char *model;
+	const char *layout;
+	const char *variant;
+	const char *options;
+} KeyboardRule;
+
 /* function declarations */
 static void applybounds(Client *c, struct wlr_box *bbox);
 static void applyrules(Client *c);
@@ -292,7 +303,7 @@ static void commitpopup(struct wl_listener *listener, void *data);
 static void createdecoration(struct wl_listener *listener, void *data);
 static void createidleinhibitor(struct wl_listener *listener, void *data);
 static void createkeyboard(struct wlr_keyboard *keyboard);
-static KeyboardGroup *createkeyboardgroup(void);
+static KeyboardGroup *createkeyboardgroup(struct xkb_rule_names *new_xkb_rules);
 static void createlayersurface(struct wl_listener *listener, void *data);
 static void createlocksurface(struct wl_listener *listener, void *data);
 static void createmon(struct wl_listener *listener, void *data);
@@ -435,7 +446,7 @@ static struct wlr_scene_rect *locked_bg;
 static struct wlr_session_lock_v1 *cur_lock;
 
 static struct wlr_seat *seat;
-static KeyboardGroup *kb_group;
+static struct wl_list kb_groups;
 static unsigned int cursor_mode;
 static Client *grabc;
 static int grabcx, grabcy; /* client-relative */
@@ -852,6 +863,7 @@ void
 cleanup(void)
 {
 	size_t i;
+	KeyboardGroup *kb_group;
 
 	cleanuplisteners();
 #ifdef XWAYLAND
@@ -874,7 +886,8 @@ cleanup(void)
 	}
 	wlr_xcursor_manager_destroy(cursor_mgr);
 
-	destroykeyboardgroup(&kb_group->destroy, NULL);
+	wl_list_for_each(kb_group, &kb_groups, link)
+		destroykeyboardgroup(&kb_group->destroy, NULL);
 
 	input_method_relay_finish(input_method_relay);
 	input_method_relay = NULL;
@@ -1111,6 +1124,30 @@ createidleinhibitor(struct wl_listener *listener, void *data)
 void
 createkeyboard(struct wlr_keyboard *keyboard)
 {
+	KeyboardGroup *kb_group;
+	const char *device_name = "";
+	const KeyboardRule *krule = NULL;
+	struct libinput_device *device = NULL;
+
+	if (wlr_input_device_is_libinput(&keyboard->base)
+			&& (device = wlr_libinput_get_device_handle(&keyboard->base))) {
+		device_name = libinput_device_get_name(device);
+	}
+	for (krule = kbrules; krule < END(kbrules); krule++) {
+		if (!krule->name || strstr(device_name, krule->name))
+			break;
+	}
+	if (krule) {
+		struct xkb_rule_names xkb_rules;
+		xkb_rules.rules = krule->rules;
+		xkb_rules.model = krule->model;
+		xkb_rules.layout = krule->layout;
+		xkb_rules.variant = krule->variant;
+		xkb_rules.options = krule->options;
+		kb_group = createkeyboardgroup(&xkb_rules);
+	} else
+		wl_list_for_each(kb_group, &kb_groups, link);
+
 	/* Set the keymap to match the group keymap */
 	wlr_keyboard_set_keymap(keyboard, kb_group->wlr_group->keyboard.keymap);
 
@@ -1119,11 +1156,16 @@ createkeyboard(struct wlr_keyboard *keyboard)
 }
 
 KeyboardGroup *
-createkeyboardgroup(void)
+createkeyboardgroup(struct xkb_rule_names *new_xkb_rules)
 {
 	KeyboardGroup *group = ecalloc(1, sizeof(*group));
 	struct xkb_context *context;
 	struct xkb_keymap *keymap;
+	struct xkb_rule_names xkb_rules;
+
+	memset(&xkb_rules, 0, sizeof(struct xkb_rule_names));
+	if (new_xkb_rules)
+		xkb_rules = *new_xkb_rules;
 
 	group->wlr_group = wlr_keyboard_group_create();
 	group->wlr_group->data = group;
@@ -1152,6 +1194,9 @@ createkeyboardgroup(void)
 	 * all of them. Set this combined wlr_keyboard as the seat keyboard.
 	 */
 	wlr_seat_set_keyboard(seat, &group->wlr_group->keyboard);
+
+	wl_list_init(&group->destroy.link);
+	wl_list_insert(&kb_groups, &group->link);
 	return group;
 }
 
@@ -1559,7 +1604,6 @@ destroykeyboardgroup(struct wl_listener *listener, void *data)
 	wl_list_remove(&group->modifiers.link);
 	wl_list_remove(&group->destroy.link);
 	wlr_keyboard_group_destroy(group->wlr_group);
-	free(group);
 }
 
 Monitor *
@@ -1946,6 +1990,7 @@ inputdevice(struct wl_listener *listener, void *data)
 	 * available. */
 	struct wlr_input_device *device = data;
 	uint32_t caps;
+	KeyboardGroup *group;
 
 	switch (device->type) {
 	case WLR_INPUT_DEVICE_KEYBOARD:
@@ -1964,8 +2009,11 @@ inputdevice(struct wl_listener *listener, void *data)
 	 * there are no pointer devices, so we always include that capability. */
 	/* TODO do we actually require a cursor? */
 	caps = WL_SEAT_CAPABILITY_POINTER;
-	if (!wl_list_empty(&kb_group->wlr_group->devices))
-		caps |= WL_SEAT_CAPABILITY_KEYBOARD;
+	wl_list_for_each(group, &kb_groups, link)
+		if (!wl_list_empty(&group->wlr_group->devices)) {
+			caps |= WL_SEAT_CAPABILITY_KEYBOARD;
+			break;
+		}
 	wlr_seat_set_capabilities(seat, caps);
 }
 
@@ -2970,6 +3018,7 @@ setup(void)
 	 */
 	wl_list_init(&clients);
 	wl_list_init(&fstack);
+	wl_list_init(&kb_groups);
 
 	xdg_shell = wlr_xdg_shell_create(dpy, 6);
 	wl_signal_add(&xdg_shell->events.new_toplevel, &new_xdg_toplevel);
@@ -3061,8 +3110,7 @@ setup(void)
 	wl_signal_add(&seat->events.request_start_drag, &request_start_drag);
 	wl_signal_add(&seat->events.start_drag, &start_drag);
 
-	kb_group = createkeyboardgroup();
-	wl_list_init(&kb_group->destroy.link);
+	createkeyboardgroup(NULL);
 
 	output_mgr = wlr_output_manager_v1_create(dpy);
 	wl_signal_add(&output_mgr->events.apply, &output_mgr_apply);
@@ -3453,11 +3501,14 @@ virtualkeyboard(struct wl_listener *listener, void *data)
 {
 	struct wlr_virtual_keyboard_v1 *kb = data;
 	/* virtual keyboards shouldn't share keyboard group */
+<<<<<<< HEAD
 	KeyboardGroup *group = createkeyboardgroup();
 	group->virtual_keyboard = &kb->keyboard;
+=======
+	KeyboardGroup *group = createkeyboardgroup(NULL);
+>>>>>>> 4be1e02 (perinput config (use libinput list-devices to find name))
 	/* Set the keymap to match the group keymap */
 	wlr_keyboard_set_keymap(&kb->keyboard, group->wlr_group->keyboard.keymap);
-	LISTEN(&kb->keyboard.base.events.destroy, &group->destroy, destroykeyboardgroup);
 
 	/* Add the new keyboard to the group */
 	wlr_keyboard_group_add_keyboard(group->wlr_group, &kb->keyboard);
