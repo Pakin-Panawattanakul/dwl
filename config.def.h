@@ -12,12 +12,16 @@ static int gaps                            = 1;  /* 1 means gaps between windows
 static const unsigned int gappx            = 10; /* gap pixel between windows */
 static const unsigned int borderpx         = 1;  /* border pixel of windows */
 <<<<<<< HEAD
+<<<<<<< HEAD
 static const unsigned int snap             = 32; /* snap pixel */
 static const float rootcolor[]             = COLOR(0x222222ff);
 static const float bordercolor[]           = COLOR(0x444444ff);
 static const float focuscolor[]            = COLOR(0x005577ff);
 static const float urgentcolor[]           = COLOR(0xff0000ff);
 =======
+=======
+static const int window_title              = 0;  /* 1 means showing window titles on the bar */
+>>>>>>> 3688e74 (apply bar-color + bar-notitile)
 static const int showbar                   = 1; /* 0 means no bar */
 static const int topbar                    = 1; /* 0 means bottom bar */
 static const char *fonts[]                 = {"monospace:size=10"};
