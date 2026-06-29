@@ -3529,7 +3529,7 @@ tag(const Arg *arg)
 	arrange(selmon);
 	if (follow == 1)
 		view(arg);
-//	printstatus();
+  //printstatus(); // cant remember where this come from
 	drawbars();
 }
 
