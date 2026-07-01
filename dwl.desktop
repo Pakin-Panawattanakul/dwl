@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=dwl
 Comment=dwm for Wayland
-Exec=/usr/local/bin/start-dwl
+Exec=/home/pakin/.config/dwl/start-dwl
 Type=Application
 DesktopNames=dwl;wlroots
