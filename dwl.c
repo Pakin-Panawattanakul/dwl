@@ -3618,8 +3618,11 @@ void
 tagmon(const Arg *arg)
 {
 	Client *sel = focustop(selmon);
-	if (sel)
+	if (sel){
 		setmon(sel, dirtomon(arg->i), 0);
+    if (follow == 1)
+      focusmon(arg);
+  }
 }
 
 void
