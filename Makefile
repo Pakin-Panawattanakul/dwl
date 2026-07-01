@@ -64,13 +64,6 @@ install: dwl
 	rm -f $(DESTDIR)$(PREFIX)/bin/dwl
 	cp -f dwl $(DESTDIR)$(PREFIX)/bin
 	chmod 755 $(DESTDIR)$(PREFIX)/bin/dwl
-	# my start-dwl scripts
-	rm -f $(DESTDIR)$(PREFIX)/bin/start-dwl
-	cp -f scripts/start-dwl $(DESTDIR)$(PREFIX)/bin
-	chmod 755 $(DESTDIR)$(PREFIX)/bin/start-dwl
-	rm -f $(DESTDIR)$(PREFIX)/bin/dwl-autostart.sh
-	cp -f scripts/dwl-autostart.sh $(DESTDIR)$(PREFIX)/bin
-	chmod 755 $(DESTDIR)$(PREFIX)/bin/dwl-autostart.sh
 
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
 	cp -f dwl.1 $(DESTDIR)$(MANDIR)/man1
