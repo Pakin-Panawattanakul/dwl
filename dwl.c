@@ -1742,12 +1742,14 @@ drawbar(Monitor *m)
 	c = focustop(m);
 	for (i = 0; i < LENGTH(tags); i++) {
 		w = TEXTW(m, tags[i]);
-		drwl_setscheme(m->drw, colors[m->tagset[m->seltags] & 1 << i ? SchemeSel : SchemeNorm]);
-		drwl_text(m->drw, x, 0, w, m->b.height, m->lrpad / 2, tags[i], urg & 1 << i);
+    // actually set urgent to be used
+    drwl_setscheme(m->drw, colors[urg & 1 << i ? SchemeUrg
+              : m->tagset[m->seltags] & 1 << i ? SchemeSel : SchemeNorm]);
+		drwl_text(m->drw, x, 0, w, m->b.height, m->lrpad / 2, tags[i], 0);
 		if (occ & 1 << i)
 			drwl_rect(m->drw, x + boxs, boxs, boxw, boxw,
 				m == selmon && c && c->tags & 1 << i,
-				urg & 1 << i);
+				0);
 		x += w;
 	}
 	w = TEXTW(m, m->ltsymbol);
