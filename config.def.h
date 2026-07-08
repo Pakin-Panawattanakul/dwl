@@ -7,9 +7,6 @@
 static const int sloppyfocus               = 1;  /* focus follows mouse */
 static const int bypass_surface_visibility = 0;  /* 1 means idle inhibitors will disable idle tracking even if it's surface isn't visible  */
 static const int follow                    = 1;  /* 1 means follow windows when sent to another tag */
-static const int smartgaps                 = 0;  /* 1 means no outer gap when there is only one window */
-static int gaps                            = 1;  /* 1 means gaps between windows are added */
-static const unsigned int gappx            = 10; /* gap pixel between windows */
 static const unsigned int borderpx         = 1;  /* border pixel of windows */
 static const int window_title              = 0;  /* 1 means showing window titles on the bar */
 static const int showbar                   = 1; /* 0 means no bar */
