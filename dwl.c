@@ -89,7 +89,7 @@
 #define PREFIX(str, prefix)     !strncmp(str, prefix, strlen(prefix))
 
 /* enums */
-enum { SchemeNorm, SchemeSel, SchemeUrg }; /* color schemes */
+enum { SchemeNorm, SchemeSel, SchemeUrg, SchemeBar }; /* color schemes */
 enum { CurNormal, CurPressed, CurMove, CurResize }; /* cursor */
 enum { XDGShell, LayerShell, X11 }; /* client types */
 enum { LyrBg, LyrBottom, LyrTile, LyrFloat, LyrTop, LyrFS, LyrOverlay, LyrBlock, NUM_LAYERS }; /* scene layers */
@@ -918,7 +918,7 @@ buttonpress(struct wl_listener *listener, void *data)
 		if (!c && !exclusive_focus &&
 			(node = wlr_scene_node_at(&layers[LyrBottom]->node, cursor->x, cursor->y, NULL, NULL)) &&
 			(buffer = wlr_scene_buffer_from_node(node)) && buffer == selmon->scene_buffer) {
-			cx = (cursor->x - selmon->m.x - sidepad) * selmon->wlr_output->scale;
+			cx = (cursor->x - selmon->m.x - borderpx) * selmon->wlr_output->scale;
 			do
 				x += TEXTW(selmon, tags[i]);
 			while (cx >= x && ++i < LENGTH(tags));
@@ -1782,10 +1782,12 @@ dirtomon(enum wlr_direction dir)
 void
 drawbar(Monitor *m)
 {
-	int x, w, tw = 0;
+	int x, y = borderpx, w, tw = 0;
+	int mh = m->b.height - borderpx * 2, mw = m->b.width - borderpx * 2;
 	int boxs = m->drw->font->height / 9;
 	int boxw = m->drw->font->height / 6 + 2;
 	uint32_t i, occ = 0, urg = 0;
+	uint32_t borderscm[] = { colors[SchemeBar][ColBorder] };
 	Client *c;
 	Buffer *buf;
 
@@ -1793,6 +1795,10 @@ drawbar(Monitor *m)
 		return;
 	if (!(buf = bufmon(m)))
 		return;
+
+	drwl_setscheme(m->drw, borderscm);
+	drwl_rect(m->drw, 0, 0, m->b.width, m->b.height, 1, 0);
+	drwl_setscheme(m->drw, colors[SchemeNorm]);
 
 	/* draw status first so it can be overdrawn by tags later */
 	if (m == selmon) /* status is only drawn on selected monitor */
@@ -1805,33 +1811,33 @@ drawbar(Monitor *m)
 		if (c->isurgent)
 			urg |= c->tags;
 	}
-	x = 0;
+	x = borderpx;
 	c = focustop(m);
 	for (i = 0; i < LENGTH(tags); i++) {
 		w = TEXTW(m, tags[i]);
     // actually set urgent to be used
     drwl_setscheme(m->drw, colors[urg & 1 << i ? SchemeUrg
               : m->tagset[m->seltags] & 1 << i ? SchemeSel : SchemeNorm]);
-		drwl_text(m->drw, x, 0, w, m->b.height, m->lrpad / 2, tags[i], 0);
++		drwl_text(m->drw, x, y, w, mh, m->lrpad / 2, tags[i], 0);
 		if (occ & 1 << i)
-			drwl_rect(m->drw, x + boxs, boxs, boxw, boxw,
+			drwl_rect(m->drw, x + boxs, y + boxs, boxw, boxw,
 				m == selmon && c && c->tags & 1 << i,
 				0);
 		x += w;
 	}
 	w = TEXTW(m, m->ltsymbol);
 	drwl_setscheme(m->drw, colors[SchemeNorm]);
-	x = drwl_text(m->drw, x, 0, w, m->b.height, m->lrpad / 2, m->ltsymbol, 0);
+	x = drwl_text(m->drw, x, y, w, mh, m->lrpad / 2, m->ltsymbol, 0);
 
-	if ((w = m->b.width - tw - x) > m->b.height) {
+	if ((w = mw - tw - x + borderpx) > mh) {
 		if (c && window_title) {
 			drwl_setscheme(m->drw, colors[m == selmon ? SchemeSel : SchemeNorm]);
-			drwl_text(m->drw, x, 0, w, m->b.height, m->lrpad / 2, client_get_title(c), 0);
+			drwl_text(m->drw, x, y, w, mh, m->lrpad / 2, client_get_title(c), 0);
 			if (c && c->isfloating)
-				drwl_rect(m->drw, x + boxs, boxs, boxw, boxw, 0, 0);
+				drwl_rect(m->drw, x + boxs, y + boxs, boxw, boxw, 0, 0);
 		} else {
 			drwl_setscheme(m->drw, colors[SchemeNorm]);
-			drwl_rect(m->drw, x, 0, w, m->b.height, 1, 1);
+			drwl_rect(m->drw, x, y, w, mh, 1, 1);
 		}
 	}
 
@@ -1856,6 +1862,7 @@ int
 drawstatus(Monitor *m)
 {
 	int x, tw, iw;
+	int y = borderpx, mh = m->b.height - borderpx * 2;
 	char rstext[512] = "";
 	char *p, *argstart, *argend, *itext;
 	uint32_t scheme[3], *color;
@@ -1880,7 +1887,7 @@ drawstatus(Monitor *m)
 	}
 	tw = TEXTW(m, rstext) - m->lrpad;
 
-	x = m->b.width - tw;
+	x = m->b.width - borderpx - tw;
 	itext = stext;
 	scheme[0] = colors[SchemeNorm][0];
 	scheme[1] = colors[SchemeNorm][1];
@@ -1899,7 +1906,7 @@ drawstatus(Monitor *m)
 			*p = '\0';
 			iw = TEXTW(m, itext) - m->lrpad;
 			if (*itext) /* only draw text if there is something to draw */
-				x = drwl_text(m->drw, x, 0, iw, m->b.height, 0, itext, 0);
+				x = drwl_text(m->drw, x, y, iw, mh, 0, itext, 0);
 			*p = '^';
 
 			if (PREFIX(p, "^fg("))
@@ -1929,7 +1936,7 @@ drawstatus(Monitor *m)
 	}
 	iw = TEXTW(m, itext) - m->lrpad;
 	if (*itext)
-		drwl_text(m->drw, x, 0, iw, m->b.height, 0, itext, 0);
+		drwl_text(m->drw, x, y, iw, mh, 0, itext, 0);
 
 	return tw;
 }
@@ -3897,7 +3904,7 @@ updatebar(Monitor *m)
 
 	m->b.scale = m->wlr_output->scale;
 	m->lrpad = m->drw->font->height;
-	m->b.height = m->drw->font->height + 2;
+	m->b.height = m->drw->font->height + 2 + borderpx * 2;
 	m->b.real_height = (int)((float)m->b.height / m->wlr_output->scale);
 }
 
