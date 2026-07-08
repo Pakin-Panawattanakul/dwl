@@ -10,6 +10,7 @@ static const int enablegaps                = 1;  /* 1 means gaps are enabled */
 static const int smartgaps                 = 0;  /* 1 means no outer gap when there is only one window */
 static const int monoclegaps               = 0;  /* 1 means outer gaps in monocle layout */
 static const int follow                    = 1;  /* 1 means follow windows when sent to another tag */
+<<<<<<< HEAD
 static const unsigned int borderpx         = 1;  /* border pixel of windows */
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -22,6 +23,9 @@ static const float urgentcolor[]           = COLOR(0xff0000ff);
 =======
 =======
 =======
+=======
+static const unsigned int borderpx         = 1;  /* border pixel of windows & bar */
+>>>>>>> c085eb4 (barborder patch)
 static const unsigned int gappih           = 10; /* horiz inner gap between windows */
 static const unsigned int gappiv           = 10; /* vert inner gap between windows */
 static const unsigned int gappoh           = 10; /* horiz outer gap between windows and screen edge */
@@ -44,6 +48,7 @@ static uint32_t colors[][3]                = {
 	[SchemeNorm] = { 0xbbbbbbff, 0x222222ff, 0x444444ff },
 	[SchemeSel]  = { 0xeeeeeeff, 0x005577ff, 0x005577ff },
 	[SchemeUrg]  = { 0,          0,          0x770000ff },
+	[SchemeBar]  = { 0,          0,          0x557700ff },
 };
 
 /* tagging */
