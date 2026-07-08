@@ -1818,7 +1818,7 @@ drawbar(Monitor *m)
     // actually set urgent to be used
     drwl_setscheme(m->drw, colors[urg & 1 << i ? SchemeUrg
               : m->tagset[m->seltags] & 1 << i ? SchemeSel : SchemeNorm]);
-+		drwl_text(m->drw, x, y, w, mh, m->lrpad / 2, tags[i], 0);
+		drwl_text(m->drw, x, y, w, mh, m->lrpad / 2, tags[i], 0);
 		if (occ & 1 << i)
 			drwl_rect(m->drw, x + boxs, y + boxs, boxw, boxw,
 				m == selmon && c && c->tags & 1 << i,
