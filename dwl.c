@@ -3706,7 +3706,7 @@ unmapnotify(struct wl_listener *listener, void *data)
 		// Call view() -> arrange() -> checkidleinhibitor() before
 		// wlr_scene_node_destroy() to prevent a rare use after free of
 		// tree->node.
-		view(&a);
+		//view(&a);
 	}
 
 	wlr_scene_node_destroy(&c->scene->node);
