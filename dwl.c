@@ -180,7 +180,11 @@ typedef struct {
 	uint32_t tags;
 	int isfloating, isurgent, isfullscreen;
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+	int switchtotag;
+>>>>>>> 9d3c018 (switch to tag patches)
 	uint32_t resize; /* configure serial of a pending resize */
 	unsigned int kblayout_idx;
 >>>>>>> 10b185e (add kblayout)
@@ -295,6 +299,7 @@ typedef struct {
 	const char *id;
 	const char *title;
 	uint32_t tags;
+	bool switchtotag;
 	int isfloating;
 	int monitor;
 	int x;
@@ -328,7 +333,7 @@ typedef struct {
 
 /* function declarations */
 static void applybounds(Client *c, struct wlr_box *bbox);
-static void applyrules(Client *c);
+static void applyrules(Client *c, bool map);
 static void arrange(Monitor *m);
 void arrangegaps(Monitor *m);
 static void arrangelayer(Monitor *m, struct wl_list *list,
@@ -631,7 +636,7 @@ applybounds(Client *c, struct wlr_box *bbox)
 }
 
 void
-applyrules(Client *c)
+applyrules(Client *c, bool map)
 {
 	/* rule matching */
 	const char *appid, *title;
@@ -668,6 +673,11 @@ applyrules(Client *c)
 					newy      = (int)round((r->y >= 0) ? (r->y <= 1 ? b.height * r->y + b.y : r->y + b.y) : (b.height - newheight) / 2 + b.y);
 					apply_resize = 1;
 				}
+			}
+			if (r->switchtotag && map) {
+				c->switchtotag = selmon->tagset[selmon->seltags];
+				mon->seltags ^= 1;
+				mon->tagset[selmon->seltags] = r->tags & TAGMASK;
 			}
 		}
 	}
@@ -1273,7 +1283,7 @@ commitnotify(struct wl_listener *listener, void *data)
 		 * a different monitor based on its title, this will likely select
 		 * a wrong monitor.
 		 */
-		applyrules(c);
+		applyrules(c, false);
 		if (c->mon) {
 			client_set_scale(client_surface(c), c->mon->wlr_output->scale);
 		}
@@ -2786,7 +2796,7 @@ mapnotify(struct wl_listener *listener, void *data)
 		c->isfloating = 1;
 		setmon(c, p->mon, p->tags);
 	} else {
-		applyrules(c);
+		applyrules(c, true);
 	}
 	drawbars();
 
@@ -3924,6 +3934,7 @@ unmapnotify(struct wl_listener *listener, void *data)
 		wl_list_remove(&c->flink);
 	}
 
+<<<<<<< HEAD
 	if (c->foreign_toplevel_handle) {
 		wlr_ext_foreign_toplevel_handle_v1_destroy(c->foreign_toplevel_handle);
 		c->foreign_toplevel_handle = NULL;
@@ -3938,6 +3949,16 @@ unmapnotify(struct wl_listener *listener, void *data)
 	wlr_scene_node_destroy(&c->image_capture_scene->tree.node);
 	c->image_capture_scene = NULL;
 	c->image_capture_source = NULL;
+=======
+	if (c->switchtotag) {
+		Arg a = { .ui = c->switchtotag };
+		// Call view() -> arrange() -> checkidleinhibitor() before
+		// wlr_scene_node_destroy() to prevent a rare use after free of
+		// tree->node.
+		view(&a);
+	}
+
+>>>>>>> 9d3c018 (switch to tag patches)
 	wlr_scene_node_destroy(&c->scene->node);
 <<<<<<< HEAD
 	client_surface(c)->data = NULL;
