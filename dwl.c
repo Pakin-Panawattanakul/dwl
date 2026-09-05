@@ -1742,8 +1742,8 @@ dirtomon(enum wlr_direction dir)
 void
 drawbar(Monitor *m)
 {
-	int x, y = borderpx, w, tw = 0;
-	int mh = m->b.height - borderpx * 2, mw = m->b.width - borderpx * 2;
+	int x, y = bar_borderpx, w, tw = 0;
+	int mh = m->b.height - bar_borderpx * 2, mw = m->b.width - bar_borderpx * 2;
 	int boxs = m->drw->font->height / 9;
 	int boxw = m->drw->font->height / 6 + 2;
 	uint32_t i, occ = 0, urg = 0;
@@ -1771,7 +1771,7 @@ drawbar(Monitor *m)
 		if (c->isurgent)
 			urg |= c->tags;
 	}
-	x = borderpx;
+	x = bar_borderpx;
 	c = focustop(m);
 	for (i = 0; i < LENGTH(tags); i++) {
 		w = TEXTW(m, tags[i]);
@@ -1789,7 +1789,7 @@ drawbar(Monitor *m)
 	drwl_setscheme(m->drw, colors[SchemeNorm]);
 	x = drwl_text(m->drw, x, y, w, mh, m->lrpad / 2, m->ltsymbol, 0);
 
-	if ((w = mw - tw - x + borderpx) > mh) {
+	if ((w = mw - tw - x + bar_borderpx) > mh) {
 		if (c && window_title) {
 			drwl_setscheme(m->drw, colors[m == selmon ? SchemeSel : SchemeNorm]);
 			drwl_text(m->drw, x, y, w, mh, m->lrpad / 2, client_get_title(c), 0);
@@ -1822,7 +1822,7 @@ int
 drawstatus(Monitor *m)
 {
 	int x, tw, iw;
-	int y = borderpx, mh = m->b.height - borderpx * 2;
+	int y = bar_borderpx, mh = m->b.height - bar_borderpx * 2;
 	char rstext[512] = "";
 	char *p, *argstart, *argend, *itext;
 	uint32_t scheme[3], *color;
@@ -1847,7 +1847,7 @@ drawstatus(Monitor *m)
 	}
 	tw = TEXTW(m, rstext) - m->lrpad;
 
-	x = m->b.width - borderpx - tw;
+	x = m->b.width - bar_borderpx - tw;
 	itext = stext;
 	scheme[0] = colors[SchemeNorm][0];
 	scheme[1] = colors[SchemeNorm][1];
