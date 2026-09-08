@@ -2091,6 +2091,8 @@ focusclient(Client *c, int lift)
 		wl_list_insert(&fstack, &c->flink);
 		selmon = c->mon;
 		c->isurgent = 0;
+    /* print appid to stdout */
+		fprintf(stderr, "focus appid: %s\n", client_get_appid(c));
 
 		/* Don't change border color if there is an exclusive focus or we are
 		 * handling a drag operation */
@@ -3777,7 +3779,6 @@ tag(const Arg *arg)
 	arrange(selmon);
 	if (follow == 1)
 		view(arg);
-  //printstatus(); // cant remember where this come from
 	drawbars();
 }
 
